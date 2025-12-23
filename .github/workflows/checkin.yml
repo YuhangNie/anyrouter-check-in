@@ -1,16 +1,48 @@
 name: AnyRouter 自动签到
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    # 每6小时执行，添加分钟随机偏移避免整点拥堵
+    - cron: '17 */6 * * *'
   workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: '启用调试模式 (保存截图和详细日志)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      skip_delay:
+        description: '跳过随机延迟 (手动触发时)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# 防止多个工作流同时运行
+concurrency:
+  group: checkin-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   checkin:
-    runs-on: windows-2025
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production
     env:
       PYTHONIOENCODING: utf-8
+      TZ: Asia/Shanghai
     steps:
+    - name: 随机延迟 (定时任务)
+      if: github.event_name == 'schedule' || inputs.skip_delay == 'false'
+      run: |
+        DELAY=$((RANDOM % 300))
+        echo "⏳ 随机延迟 ${DELAY} 秒，避免检测..."
+        sleep $DELAY
+
     - uses: actions/checkout@v4
 
     - uses: astral-sh/setup-uv@v3
@@ -33,24 +65,27 @@ jobs:
           ${{ runner.os }}-uv-
 
     - name: 安装依赖
-      if: steps.uv-cache.outputs.cache-hit != 'true'
       run: |
-        echo "缓存未命中，开始安装项目依赖..."
+        if [ "${{ steps.uv-cache.outputs.cache-hit }}" != "true" ]; then
+          echo "📦 缓存未命中，开始安装项目依赖..."
+        else
+          echo "📦 从缓存恢复依赖，验证环境..."
+        fi
         uv sync
         echo "✅ 环境初始化完成"
 
     - name: 获取 Playwright 版本
       id: playwright-version
       run: |
-        $version = uv run python -c "import importlib.metadata; print(importlib.metadata.version('playwright'))"
-        echo "version=$version" >> $env:GITHUB_OUTPUT
-        echo "Playwright version: $version"
+        version=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('playwright'))")
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "🎭 Playwright version: $version"
 
     - name: 缓存 Playwright 浏览器
       uses: actions/cache@v4
       id: playwright-cache
       with:
-        path: ~\AppData\Local\ms-playwright
+        path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
         restore-keys: |
           ${{ runner.os }}-playwright-
@@ -58,7 +93,7 @@ jobs:
     - name: 安装 Playwright 浏览器
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: |
-        echo "缓存未命中，开始安装 Playwright 浏览器..."
+        echo "🌐 缓存未命中，开始安装 Playwright 浏览器..."
         uv run playwright install chromium --with-deps
 
     - name: 恢复余额历史缓存
@@ -70,6 +105,7 @@ jobs:
           balance-hash-
 
     - name: 执行签到
+      id: checkin
       env:
         ANYROUTER_ACCOUNTS: ${{ secrets.ANYROUTER_ACCOUNTS }}
         PROVIDERS: ${{ secrets.PROVIDERS }}
@@ -87,11 +123,31 @@ jobs:
         GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
         GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
         GOTIFY_PRIORITY: ${{ secrets.GOTIFY_PRIORITY }}
+        DEBUG_MODE: ${{ inputs.debug_mode || 'false' }}
       run: |
         uv run checkin.py
+
+    - name: 上传调试截图
+      if: failure() || inputs.debug_mode == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-screenshots-${{ github.run_id }}
+        path: |
+          screenshots/
+          *.png
+          debug_*.log
+        retention-days: 7
+        if-no-files-found: ignore
 
     - name: 执行结果
       if: always()
       run: |
-        echo "签到任务执行完成"
-        echo "时间: $(Get-Date)"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        if [ "${{ steps.checkin.outcome }}" == "success" ]; then
+          echo "✅ 签到任务执行成功"
+        else
+          echo "❌ 签到任务执行失败"
+        fi
+        echo "⏰ 完成时间: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+        echo "🔗 运行链接: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
