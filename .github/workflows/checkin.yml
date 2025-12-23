@@ -1,4 +1,4 @@
-name: AnyRouter 自动签到
+name: Check-in Automation
 on:
   schedule:
     # 每6小时执行，添加分钟随机偏移避免整点拥堵
@@ -90,11 +90,19 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-playwright-
 
-    - name: 安装 Playwright 浏览器
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
+    - name: 安装 Playwright 浏览器和 Xvfb
       run: |
-        echo "🌐 缓存未命中，开始安装 Playwright 浏览器..."
-        uv run playwright install chromium --with-deps
+        # 安装 xvfb 用于虚拟显示器（支持 headed 模式绕过 WAF）
+        sudo apt-get update
+        sudo apt-get install -y xvfb
+
+        # 安装 Playwright 浏览器（如果缓存未命中）
+        if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+          echo "🌐 缓存未命中，开始安装 Playwright 浏览器..."
+          uv run playwright install chromium --with-deps
+        else
+          echo "🌐 从缓存恢复 Playwright 浏览器"
+        fi
 
     - name: 恢复余额历史缓存
       uses: actions/cache@v4
@@ -125,7 +133,7 @@ jobs:
         GOTIFY_PRIORITY: ${{ secrets.GOTIFY_PRIORITY }}
         DEBUG_MODE: ${{ inputs.debug_mode || 'false' }}
       run: |
-        uv run checkin.py
+        xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" uv run checkin.py
 
     - name: 上传调试截图
       if: failure() || inputs.debug_mode == 'true'
