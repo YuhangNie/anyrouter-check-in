@@ -208,6 +208,50 @@ async function getHistory(env) {
 	}
 
 	try {
+		// Try to get balance history file
+		const historyUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/contents/balance_history.json`;
+		const historyResponse = await fetch(historyUrl, {
+			headers: {
+				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+				'User-Agent': 'AnyRouter-Bot',
+				'Accept': 'application/vnd.github.v3+json'
+			}
+		});
+
+		if (historyResponse.ok) {
+			const historyData = await historyResponse.json();
+			if (historyData.content) {
+				const content = atob(historyData.content.replace(/\n/g, ''));
+				const history = JSON.parse(content);
+
+				if (history.length > 0) {
+					let msg = `<b>📊 Check-in History</b>\n`;
+					msg += `<code>─────────────────────</code>\n\n`;
+
+					// Show last 5 records
+					const records = history.slice(-5).reverse();
+					for (const record of records) {
+						const icon = record.success ? '✅' : '❌';
+						msg += `${icon} <code>${record.time}</code>\n`;
+
+						for (const acc of record.accounts || []) {
+							const accIcon = acc.success ? '  ✓' : '  ✗';
+							msg += `${accIcon} ${acc.name}`;
+							if (acc.balance) {
+								msg += ` | ${acc.balance}`;
+							}
+							msg += '\n';
+						}
+						msg += '\n';
+					}
+
+					msg += `<i>Showing last ${records.length} records</i>`;
+					return msg;
+				}
+			}
+		}
+
+		// Fallback to workflow runs if no history file
 		const url = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs?per_page=10`;
 		const response = await fetch(url, {
 			headers: {
@@ -223,7 +267,7 @@ async function getHistory(env) {
 			return 'No check-in records yet.';
 		}
 
-		let history = `<b>Check-in History</b>\n`;
+		let history = `<b>📊 Check-in History</b>\n`;
 		history += `<code>─────────────────────</code>\n\n`;
 
 		for (const run of runs.slice(0, 5)) {
@@ -283,12 +327,14 @@ Use /history to check progress.`;
 	}
 }
 
-// Format time to readable string
+// Format time to Beijing time (UTC+8)
 function formatTime(isoString) {
 	const date = new Date(isoString);
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	const hours = String(date.getHours()).padStart(2, '0');
-	const minutes = String(date.getMinutes()).padStart(2, '0');
+	// Convert to UTC+8
+	const utc8 = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+	const month = String(utc8.getUTCMonth() + 1).padStart(2, '0');
+	const day = String(utc8.getUTCDate()).padStart(2, '0');
+	const hours = String(utc8.getUTCHours()).padStart(2, '0');
+	const minutes = String(utc8.getUTCMinutes()).padStart(2, '0');
 	return `${month}-${day} ${hours}:${minutes}`;
 }

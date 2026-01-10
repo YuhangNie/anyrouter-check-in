@@ -20,6 +20,8 @@ from utils.notify import notify
 load_dotenv()
 
 BALANCE_HASH_FILE = 'balance_hash.txt'
+BALANCE_HISTORY_FILE = 'balance_history.json'
+MAX_HISTORY_RECORDS = 20
 
 
 def load_balance_hash():
@@ -40,6 +42,28 @@ def save_balance_hash(balance_hash):
 			f.write(balance_hash)
 	except Exception as e:
 		print(f'Warning: Failed to save balance hash: {e}')
+
+
+def load_balance_history():
+	"""加载余额历史"""
+	try:
+		if os.path.exists(BALANCE_HISTORY_FILE):
+			with open(BALANCE_HISTORY_FILE, 'r', encoding='utf-8') as f:
+				return json.load(f)
+	except Exception:
+		pass
+	return []
+
+
+def save_balance_history(history):
+	"""保存余额历史"""
+	try:
+		# 只保留最近的记录
+		history = history[-MAX_HISTORY_RECORDS:]
+		with open(BALANCE_HISTORY_FILE, 'w', encoding='utf-8') as f:
+			json.dump(history, f, ensure_ascii=False, indent=2)
+	except Exception as e:
+		print(f'Warning: Failed to save balance history: {e}')
 
 
 def generate_balance_hash(balances):
@@ -372,6 +396,26 @@ async def main():
 	# 保存当前余额hash
 	if current_balance_hash:
 		save_balance_hash(current_balance_hash)
+
+	# 保存余额历史记录
+	if checkin_results:
+		history = load_balance_history()
+		history_record = {
+			'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+			'success': success_count == total_count,
+			'accounts': []
+		}
+		for r in checkin_results:
+			account_record = {
+				'name': r.get('name', 'Unknown'),
+				'success': r.get('success', False),
+				'balance': r.get('balance', ''),
+				'used': r.get('used', '')
+			}
+			history_record['accounts'].append(account_record)
+		history.append(history_record)
+		save_balance_history(history)
+		print(f'[INFO] Balance history saved ({len(history)} records)')
 
 	if need_notify and notification_content:
 		# 构建通知内容
