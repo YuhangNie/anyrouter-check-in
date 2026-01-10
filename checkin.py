@@ -168,6 +168,36 @@ def get_user_info(client, headers, user_info_url: str):
 		return {'success': False, 'error': f'Failed to get user info: {str(e)[:50]}...'}
 
 
+async def take_screenshot_only(account_name: str, page_url: str) -> str | None:
+	"""单独截图功能，用于不需要WAF的账号"""
+	print(f'[PROCESSING] {account_name}: Taking screenshot...')
+
+	async with async_playwright() as p:
+		browser = await p.chromium.launch(headless=True)
+		context = await browser.new_context(
+			user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+			viewport={'width': 1920, 'height': 1080},
+		)
+		page = await context.new_page()
+
+		try:
+			await page.goto(page_url, wait_until='networkidle', timeout=30000)
+			await page.wait_for_timeout(2000)
+
+			SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+			timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+			safe_name = account_name.replace(' ', '_').replace('/', '_')[:20]
+			screenshot_path = SCREENSHOT_DIR / f'checkin_{safe_name}_{timestamp}.png'
+			await page.screenshot(path=str(screenshot_path), full_page=False)
+			print(f'[INFO] {account_name}: Screenshot saved to {screenshot_path}')
+			return str(screenshot_path)
+		except Exception as e:
+			print(f'[WARNING] {account_name}: Failed to take screenshot: {e}')
+			return None
+		finally:
+			await browser.close()
+
+
 async def prepare_cookies(account_name: str, provider_config, user_cookies: dict, take_screenshot: bool = False) -> tuple[dict | None, str | None]:
 	"""准备请求所需的 cookies（可能包含 WAF cookies），返回 (cookies, screenshot_path)"""
 	waf_cookies = {}
@@ -181,6 +211,9 @@ async def prepare_cookies(account_name: str, provider_config, user_cookies: dict
 			return None, screenshot_path
 	else:
 		print(f'[INFO] {account_name}: Bypass WAF not required, using user cookies directly')
+		# 不需要WAF时，单独截图
+		if take_screenshot:
+			screenshot_path = await take_screenshot_only(account_name, provider_config.domain)
 
 	return {**waf_cookies, **user_cookies}, screenshot_path
 
