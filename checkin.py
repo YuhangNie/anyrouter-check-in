@@ -307,7 +307,8 @@ async def main():
 			result_data = {
 				'name': account_name,
 				'success': success,
-				'balance': ''
+				'balance': '',
+				'used': ''
 			}
 
 			if user_info and user_info.get('success'):
@@ -315,6 +316,7 @@ async def main():
 				current_used = user_info['used_quota']
 				current_balances[account_key] = {'quota': current_quota, 'used': current_used}
 				result_data['balance'] = f'${current_quota}'
+				result_data['used'] = f'${current_used}'
 
 			checkin_results.append(result_data)
 
@@ -334,7 +336,8 @@ async def main():
 			checkin_results.append({
 				'name': account_name,
 				'success': False,
-				'balance': ''
+				'balance': '',
+				'used': ''
 			})
 
 	# 检查余额变化

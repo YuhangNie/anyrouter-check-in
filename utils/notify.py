@@ -11,14 +11,23 @@ class TelegramFormatter:
 
 	@staticmethod
 	def format_simple(title: str, results: list[dict], time_str: str = '') -> str:
-		"""Simple format with emoji"""
-		lines = [f'🤖 <b>{title}</b>']
+		"""Clean formatted message with emoji"""
+		lines = []
 
-		if time_str:
-			lines.append(f'⏰ {time_str}')
-
+		# Header
+		lines.append(f'<b>📋 {title}</b>')
 		lines.append('')
 
+		# Time
+		if time_str:
+			lines.append(f'🕐 <code>{time_str}</code>')
+			lines.append('')
+
+		# Separator
+		lines.append('━━━━━━━━━━━━━━━━━━━━')
+		lines.append('')
+
+		# Account details
 		success_count = sum(1 for r in results if r.get('success'))
 		total = len(results)
 
@@ -26,13 +35,26 @@ class TelegramFormatter:
 			icon = '✅' if r.get('success') else '❌'
 			name = r.get('name', 'Unknown')
 			balance = r.get('balance', '')
-			line = f"{icon} <b>{name}</b>"
-			if balance:
-				line += f" | 💰 {balance}"
-			lines.append(line)
+			used = r.get('used', '')
 
+			lines.append(f'{icon} <b>{name}</b>')
+			if balance:
+				lines.append(f'   💰 Balance: <code>{balance}</code>')
+			if used:
+				lines.append(f'   📉 Used: <code>{used}</code>')
+			lines.append('')
+
+		# Separator
+		lines.append('━━━━━━━━━━━━━━━━━━━━')
 		lines.append('')
-		lines.append(f'📊 Result: {success_count}/{total} Success')
+
+		# Summary
+		if success_count == total:
+			lines.append(f'🎉 <b>All {total} accounts successful!</b>')
+		elif success_count > 0:
+			lines.append(f'⚠️ <b>Result: {success_count}/{total} Success</b>')
+		else:
+			lines.append(f'❌ <b>All {total} accounts failed!</b>')
 
 		return '\n'.join(lines)
 

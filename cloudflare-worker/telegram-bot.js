@@ -10,18 +10,42 @@
  */
 
 const COMMANDS = {
-	'/start': '👋 Welcome to AnyRouter Check-in Bot!\n\nCommands:\n/status - View check-in status\n/checkin - Trigger check-in\n/help - Show help',
-	'/help': '📖 <b>Commands</b>\n\n/status - View recent check-in status\n/checkin - Manually trigger check-in\n/help - Show this help message',
+	'/start': `<b>Welcome to AnyRouter Check-in Bot!</b>
+
+Available commands:
+/status - View account balance
+/checkin - Trigger check-in
+/history - View check-in history
+/help - Show this help`,
+
+	'/help': `<b>Available Commands</b>
+
+/status - View current account balance and usage
+/checkin - Manually trigger check-in
+/history - View recent check-in history
+/help - Show this help message
+
+<i>Bot runs automatically every 6 hours</i>`,
 };
 
 export default {
 	async fetch(request, env) {
-		if (request.method !== 'POST') {
+		const url = new URL(request.url);
+
+		// GET request - show status or setup commands
+		if (request.method === 'GET') {
+			// Setup bot commands: /setup?token=xxx
+			if (url.pathname === '/setup') {
+				return await setupBotCommands(env);
+			}
 			return new Response('AnyRouter Telegram Bot is running!', { status: 200 });
 		}
 
+		if (request.method !== 'POST') {
+			return new Response('Method not allowed', { status: 405 });
+		}
+
 		// Verify secret key (optional)
-		const url = new URL(request.url);
 		if (env.BOT_SECRET && url.pathname !== `/${env.BOT_SECRET}`) {
 			return new Response('Unauthorized', { status: 401 });
 		}
@@ -39,8 +63,8 @@ export default {
 			const allowedChats = (env.TELEGRAM_CHAT_ID || '').split(',').map(id => id.trim());
 
 			// Verify Chat ID
-			if (allowedChats.length > 0 && !allowedChats.includes(chatId)) {
-				await sendMessage(env, chatId, '⛔ Unauthorized user');
+			if (allowedChats.length > 0 && allowedChats[0] !== '' && !allowedChats.includes(chatId)) {
+				await sendMessage(env, chatId, 'Unauthorized user');
 				return new Response('OK', { status: 200 });
 			}
 
@@ -55,16 +79,20 @@ export default {
 					break;
 
 				case '/status':
-					response = await getStatus(env);
+					response = await getAccountStatus(env);
 					break;
 
 				case '/checkin':
 					response = await triggerCheckin(env);
 					break;
 
+				case '/history':
+					response = await getHistory(env);
+					break;
+
 				default:
 					if (text.startsWith('/')) {
-						response = '❓ Unknown command. Type /help for available commands';
+						response = 'Unknown command. Use /help for available commands.';
 					}
 			}
 
@@ -79,6 +107,33 @@ export default {
 		}
 	}
 };
+
+// Setup bot commands (call once via GET /setup)
+async function setupBotCommands(env) {
+	if (!env.TELEGRAM_BOT_TOKEN) {
+		return new Response('TELEGRAM_BOT_TOKEN not set', { status: 400 });
+	}
+
+	const commands = [
+		{ command: 'status', description: 'View account balance' },
+		{ command: 'checkin', description: 'Trigger check-in' },
+		{ command: 'history', description: 'View check-in history' },
+		{ command: 'help', description: 'Show help message' },
+	];
+
+	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setMyCommands`;
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ commands })
+	});
+
+	const result = await response.json();
+	return new Response(JSON.stringify(result, null, 2), {
+		status: 200,
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
 
 // Send Telegram message
 async function sendMessage(env, chatId, text) {
@@ -95,14 +150,65 @@ async function sendMessage(env, chatId, text) {
 	});
 }
 
-// Get check-in status (from GitHub Actions)
-async function getStatus(env) {
+// Get account status (balance info from latest workflow artifact)
+async function getAccountStatus(env) {
 	if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
-		return '⚠️ GitHub configuration not set';
+		return 'GitHub configuration not set';
 	}
 
 	try {
-		const url = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs?per_page=5`;
+		// Get latest successful workflow run
+		const runsUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs?status=success&per_page=1`;
+		const runsResponse = await fetch(runsUrl, {
+			headers: {
+				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+				'User-Agent': 'AnyRouter-Bot'
+			}
+		});
+
+		const runsData = await runsResponse.json();
+		const runs = runsData.workflow_runs || [];
+
+		if (runs.length === 0) {
+			return 'No successful check-in records found.\n\nUse /checkin to trigger one.';
+		}
+
+		const latestRun = runs[0];
+		const runTime = formatTime(latestRun.created_at);
+
+		// Try to get job logs for balance info
+		const jobsUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs/${latestRun.id}/jobs`;
+		const jobsResponse = await fetch(jobsUrl, {
+			headers: {
+				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+				'User-Agent': 'AnyRouter-Bot'
+			}
+		});
+
+		const jobsData = await jobsResponse.json();
+		const job = jobsData.jobs?.[0];
+
+		let status = `<b>Account Status</b>\n`;
+		status += `<code>─────────────────────</code>\n\n`;
+		status += `Last check-in: ${runTime}\n`;
+		status += `Status: ${latestRun.conclusion === 'success' ? 'Success' : 'Failed'}\n\n`;
+		status += `<i>Balance details are shown in check-in notifications.</i>\n`;
+		status += `<i>Use /checkin to get latest balance.</i>`;
+
+		return status;
+	} catch (error) {
+		return `Failed to get status: ${error.message}`;
+	}
+}
+
+// Get check-in history
+async function getHistory(env) {
+	if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
+		return 'GitHub configuration not set';
+	}
+
+	try {
+		const url = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs?per_page=10`;
 		const response = await fetch(url, {
 			headers: {
 				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
@@ -114,30 +220,33 @@ async function getStatus(env) {
 		const runs = data.workflow_runs || [];
 
 		if (runs.length === 0) {
-			return '📭 No check-in records yet';
+			return 'No check-in records yet.';
 		}
 
-		let status = '📊 <b>Recent Check-in Records</b>\n';
-		status += '┌──────────────────────┐\n';
+		let history = `<b>Check-in History</b>\n`;
+		history += `<code>─────────────────────</code>\n\n`;
 
-		for (const run of runs.slice(0, 3)) {
-			const time = new Date(run.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-			const icon = run.conclusion === 'success' ? '✅' : run.conclusion === 'failure' ? '❌' : '🔄';
-			const statusText = run.conclusion || 'running';
-			status += `│ ${icon} ${statusText.padEnd(8)} ${time.slice(5, 16)} │\n`;
+		for (const run of runs.slice(0, 5)) {
+			const time = formatTime(run.created_at);
+			const icon = run.conclusion === 'success' ? '✅' :
+			             run.conclusion === 'failure' ? '❌' :
+			             run.status === 'in_progress' ? '🔄' : '⏳';
+			const status = run.conclusion || run.status || 'pending';
+
+			history += `${icon} <code>${time}</code> ${status}\n`;
 		}
 
-		status += '└──────────────────────┘';
-		return status;
+		history += `\n<i>Showing last 5 records</i>`;
+		return history;
 	} catch (error) {
-		return `❌ Failed to get status: ${error.message}`;
+		return `Failed to get history: ${error.message}`;
 	}
 }
 
 // Trigger check-in (via GitHub Actions)
 async function triggerCheckin(env) {
 	if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
-		return '⚠️ GitHub configuration not set';
+		return 'GitHub configuration not set';
 	}
 
 	try {
@@ -157,12 +266,29 @@ async function triggerCheckin(env) {
 		});
 
 		if (response.status === 204 || response.status === 200) {
-			return '🚀 Check-in triggered!\n\nPlease wait 1-2 minutes and use /status to view results';
+			return `<b>Check-in Triggered!</b>
+
+The check-in process has started.
+
+Please wait 1-2 minutes for results.
+You will receive a notification when complete.
+
+Use /history to check progress.`;
 		} else {
 			const text = await response.text();
-			return `❌ Trigger failed: ${response.status} ${text}`;
+			return `Trigger failed: ${response.status}\n${text}`;
 		}
 	} catch (error) {
-		return `❌ Trigger failed: ${error.message}`;
+		return `Trigger failed: ${error.message}`;
 	}
+}
+
+// Format time to readable string
+function formatTime(isoString) {
+	const date = new Date(isoString);
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	return `${month}-${day} ${hours}:${minutes}`;
 }
