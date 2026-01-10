@@ -330,8 +330,9 @@ async def main():
 
 	print(f'[INFO] Found {len(accounts)} account configurations')
 
-	# 是否启用截图功能
-	enable_screenshot = os.getenv('TELEGRAM_SCREENSHOT', 'true').lower() == 'true'
+	# 是否启用截图功能（默认开启，除非显式设置为false）
+	screenshot_env = os.getenv('TELEGRAM_SCREENSHOT', '').lower()
+	enable_screenshot = screenshot_env != 'false'  # 空字符串或其他值都默认开启
 	if enable_screenshot:
 		print('[INFO] Screenshot feature enabled')
 

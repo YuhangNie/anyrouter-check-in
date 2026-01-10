@@ -105,9 +105,11 @@ class NotificationKit:
 		self.telegram_bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 		self.telegram_chat_ids = self._parse_chat_ids(os.getenv('TELEGRAM_CHAT_ID', ''))
 		self.telegram_thread_id = os.getenv('TELEGRAM_THREAD_ID')
-		self.telegram_silent = os.getenv('TELEGRAM_SILENT', 'false').lower() == 'true'
-		self.telegram_notify_success = os.getenv('TELEGRAM_NOTIFY_SUCCESS', 'true').lower() == 'true'
-		self.telegram_disable_preview = os.getenv('TELEGRAM_DISABLE_PREVIEW', 'true').lower() == 'true'
+		self.telegram_silent = os.getenv('TELEGRAM_SILENT', '').lower() == 'true'
+		# 默认开启成功通知，除非显式设置为false
+		self.telegram_notify_success = os.getenv('TELEGRAM_NOTIFY_SUCCESS', '').lower() != 'false'
+		# 默认禁用预览，除非显式设置为false
+		self.telegram_disable_preview = os.getenv('TELEGRAM_DISABLE_PREVIEW', '').lower() != 'false'
 		self.telegram_retry_times = 3
 		self.telegram_retry_delay = 2
 
