@@ -6,6 +6,37 @@ from typing import Literal
 import httpx
 
 
+class TelegramFormatter:
+	"""Telegram message formatter"""
+
+	@staticmethod
+	def format_simple(title: str, results: list[dict], time_str: str = '') -> str:
+		"""Simple format with emoji"""
+		lines = [f'🤖 <b>{title}</b>']
+
+		if time_str:
+			lines.append(f'⏰ {time_str}')
+
+		lines.append('')
+
+		success_count = sum(1 for r in results if r.get('success'))
+		total = len(results)
+
+		for r in results:
+			icon = '✅' if r.get('success') else '❌'
+			name = r.get('name', 'Unknown')
+			balance = r.get('balance', '')
+			line = f"{icon} <b>{name}</b>"
+			if balance:
+				line += f" | 💰 {balance}"
+			lines.append(line)
+
+		lines.append('')
+		lines.append(f'📊 Result: {success_count}/{total} Success')
+
+		return '\n'.join(lines)
+
+
 class NotificationKit:
 	def __init__(self):
 		self.email_user: str = os.getenv('EMAIL_USER', '')
@@ -119,6 +150,24 @@ class NotificationKit:
 		url = f'https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage'
 		with httpx.Client(timeout=30.0) as client:
 			client.post(url, json=data)
+
+	def send_telegram_formatted(self, results: list[dict], time_str: str = ''):
+		"""Send formatted Telegram message"""
+		if not self.telegram_bot_token or not self.telegram_chat_id:
+			raise ValueError('Telegram Bot Token or Chat ID not configured')
+
+		message = TelegramFormatter.format_simple('AnyRouter Check-in', results, time_str)
+		data = {
+			'chat_id': self.telegram_chat_id,
+			'text': message,
+			'parse_mode': 'HTML',
+			'disable_web_page_preview': True
+		}
+		url = f'https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage'
+		with httpx.Client(timeout=30.0) as client:
+			resp = client.post(url, json=data)
+			if resp.status_code != 200:
+				raise ValueError(f'Telegram API error: {resp.text}')
 
 	def push_message(self, title: str, content: str, msg_type: Literal['text', 'html'] = 'text'):
 		notifications = [

@@ -10,6 +10,8 @@ on:
         required: false
         default: 'true'
         type: boolean
+  repository_dispatch:
+    types: [telegram_checkin]
 
 # 防止多个工作流同时运行
 concurrency:
@@ -26,7 +28,7 @@ jobs:
       TZ: Asia/Shanghai
     steps:
     - name: 随机延迟 (定时任务)
-      if: github.event_name == 'schedule' || inputs.skip_delay == false
+      if: github.event_name == 'schedule'
       run: |
         DELAY=$((RANDOM % 300))
         echo "⏳ 随机延迟 ${DELAY} 秒..."

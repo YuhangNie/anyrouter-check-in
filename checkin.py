@@ -286,9 +286,11 @@ async def main():
 	current_balances = {}
 	need_notify = False  # 是否需要发送通知
 	balance_changed = False  # 余额是否有变化
+	checkin_results = []  # 用于格式化通知
 
 	for i, account in enumerate(accounts):
 		account_key = f'account_{i + 1}'
+		account_name = account.get_display_name(i)
 		try:
 			success, user_info = await check_in_account(account, i, app_config)
 			if success:
@@ -299,16 +301,24 @@ async def main():
 			if not success:
 				should_notify_this_account = True
 				need_notify = True
-				account_name = account.get_display_name(i)
 				print(f'[NOTIFY] {account_name} failed, will send notification')
+
+			# 收集结果数据
+			result_data = {
+				'name': account_name,
+				'success': success,
+				'balance': ''
+			}
 
 			if user_info and user_info.get('success'):
 				current_quota = user_info['quota']
 				current_used = user_info['used_quota']
 				current_balances[account_key] = {'quota': current_quota, 'used': current_used}
+				result_data['balance'] = f'${current_quota}'
+
+			checkin_results.append(result_data)
 
 			if should_notify_this_account:
-				account_name = account.get_display_name(i)
 				status = '[SUCCESS]' if success else '[FAIL]'
 				account_result = f'{status} {account_name}'
 				if user_info and user_info.get('success'):
@@ -318,10 +328,14 @@ async def main():
 				notification_content.append(account_result)
 
 		except Exception as e:
-			account_name = account.get_display_name(i)
 			print(f'[FAILED] {account_name} processing exception: {e}')
 			need_notify = True  # 异常也需要通知
 			notification_content.append(f'[FAIL] {account_name} exception: {str(e)[:50]}...')
+			checkin_results.append({
+				'name': account_name,
+				'success': False,
+				'balance': ''
+			})
 
 	# 检查余额变化
 	current_balance_hash = generate_balance_hash(current_balances) if current_balances else None
@@ -371,12 +385,44 @@ async def main():
 		else:
 			summary.append('[ERROR] All accounts check-in failed')
 
-		time_info = f'[TIME] Execution time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+		time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		time_info = f'[TIME] Execution time: {time_str}'
 
 		notify_content = '\n\n'.join([time_info, '\n'.join(notification_content), '\n'.join(summary)])
 
 		print(notify_content)
-		notify.push_message('AnyRouter Check-in Alert', notify_content, msg_type='text')
+
+		# 发送格式化的 Telegram 通知
+		try:
+			notify.send_telegram_formatted(checkin_results, time_str)
+			print('[Telegram]: Formatted message sent!')
+		except Exception as e:
+			print(f'[Telegram]: Formatted message failed: {e}')
+			# 降级到普通通知
+			try:
+				notify.send_telegram('AnyRouter Check-in Alert', notify_content)
+				print('[Telegram]: Fallback message sent!')
+			except Exception as e2:
+				print(f'[Telegram]: Fallback also failed: {e2}')
+
+		# 发送其他通知方式
+		other_notifications = [
+			('Email', lambda: notify.send_email('AnyRouter Check-in Alert', notify_content, 'text')),
+			('PushPlus', lambda: notify.send_pushplus('AnyRouter Check-in Alert', notify_content)),
+			('Server Push', lambda: notify.send_serverPush('AnyRouter Check-in Alert', notify_content)),
+			('DingTalk', lambda: notify.send_dingtalk('AnyRouter Check-in Alert', notify_content)),
+			('Feishu', lambda: notify.send_feishu('AnyRouter Check-in Alert', notify_content)),
+			('WeChat Work', lambda: notify.send_wecom('AnyRouter Check-in Alert', notify_content)),
+			('Gotify', lambda: notify.send_gotify('AnyRouter Check-in Alert', notify_content)),
+		]
+
+		for name, func in other_notifications:
+			try:
+				func()
+				print(f'[{name}]: Message push successful!')
+			except Exception as e:
+				print(f'[{name}]: Message push failed! Reason: {str(e)}')
+
 		print('[NOTIFY] Notification sent due to failures or balance changes')
 	else:
 		print('[INFO] All accounts successful and no balance changes detected, notification skipped')
