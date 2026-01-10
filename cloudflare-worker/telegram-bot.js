@@ -13,16 +13,14 @@ const COMMANDS = {
 	'/start': `<b>Welcome to AnyRouter Check-in Bot!</b>
 
 Available commands:
-/status - View account balance
 /checkin - Trigger check-in
-/history - View check-in history
+/history - View check-in history and balance
 /help - Show this help`,
 
 	'/help': `<b>Available Commands</b>
 
-/status - View current account balance and usage
 /checkin - Manually trigger check-in
-/history - View recent check-in history
+/history - View recent check-in history and balance
 /help - Show this help message
 
 <i>Bot runs automatically every 6 hours</i>`,
@@ -78,10 +76,6 @@ export default {
 					response = COMMANDS[command];
 					break;
 
-				case '/status':
-					response = await getAccountStatus(env);
-					break;
-
 				case '/checkin':
 					response = await triggerCheckin(env);
 					break;
@@ -115,7 +109,6 @@ async function setupBotCommands(env) {
 	}
 
 	const commands = [
-		{ command: 'status', description: 'View account balance' },
 		{ command: 'checkin', description: 'Trigger check-in' },
 		{ command: 'history', description: 'View check-in history' },
 		{ command: 'help', description: 'Show help message' },
@@ -148,57 +141,6 @@ async function sendMessage(env, chatId, text) {
 			disable_web_page_preview: true
 		})
 	});
-}
-
-// Get account status (balance info from latest workflow artifact)
-async function getAccountStatus(env) {
-	if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
-		return 'GitHub configuration not set';
-	}
-
-	try {
-		// Get latest successful workflow run
-		const runsUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs?status=success&per_page=1`;
-		const runsResponse = await fetch(runsUrl, {
-			headers: {
-				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
-				'User-Agent': 'AnyRouter-Bot'
-			}
-		});
-
-		const runsData = await runsResponse.json();
-		const runs = runsData.workflow_runs || [];
-
-		if (runs.length === 0) {
-			return 'No successful check-in records found.\n\nUse /checkin to trigger one.';
-		}
-
-		const latestRun = runs[0];
-		const runTime = formatTime(latestRun.created_at);
-
-		// Try to get job logs for balance info
-		const jobsUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/runs/${latestRun.id}/jobs`;
-		const jobsResponse = await fetch(jobsUrl, {
-			headers: {
-				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
-				'User-Agent': 'AnyRouter-Bot'
-			}
-		});
-
-		const jobsData = await jobsResponse.json();
-		const job = jobsData.jobs?.[0];
-
-		let status = `<b>Account Status</b>\n`;
-		status += `<code>─────────────────────</code>\n\n`;
-		status += `Last check-in: ${runTime}\n`;
-		status += `Status: ${latestRun.conclusion === 'success' ? 'Success' : 'Failed'}\n\n`;
-		status += `<i>Balance details are shown in check-in notifications.</i>\n`;
-		status += `<i>Use /checkin to get latest balance.</i>`;
-
-		return status;
-	} catch (error) {
-		return `Failed to get status: ${error.message}`;
-	}
 }
 
 // Get check-in history
