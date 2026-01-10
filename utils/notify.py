@@ -321,8 +321,12 @@ class NotificationKit:
 		# 如果有截图，发送截图
 		if screenshot_path:
 			try:
+				import os
+				print(f'[DEBUG] Attempting to send screenshot: {screenshot_path}')
+				print(f'[DEBUG] Screenshot file exists: {os.path.exists(screenshot_path)}')
 				caption = f"📷 签到页面截图\n⏰ {execution_time}"
 				self.send_telegram_photo(screenshot_path, caption)
+				print('[DEBUG] Screenshot sent successfully!')
 			except Exception as e:
 				print(f'[Telegram]: Failed to send screenshot: {str(e)}')
 

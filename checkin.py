@@ -447,6 +447,8 @@ async def main():
 		try:
 			# 选择第一张截图发送（如果有）
 			screenshot_to_send = screenshot_paths[0] if screenshot_paths else None
+			print(f'[DEBUG] Screenshot paths collected: {screenshot_paths}')
+			print(f'[DEBUG] Screenshot to send: {screenshot_to_send}')
 			notify.send_telegram_enhanced(
 				results=checkin_results,
 				success_count=success_count,
