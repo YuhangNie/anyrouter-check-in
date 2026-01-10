@@ -7,23 +7,20 @@
  * - GITHUB_TOKEN: GitHub Personal Access Token
  * - GITHUB_REPO: Repository name, format: owner/repo
  * - BOT_SECRET: Webhook secret key (optional)
- * - ANYROUTER_ACCOUNTS: Account configs JSON (for real-time balance)
  */
 
 const COMMANDS = {
 	'/start': `<b>Welcome to AnyRouter Check-in Bot!</b>
 
 Available commands:
-/status - View real-time balance
 /checkin - Trigger check-in
-/history - View check-in history
+/history - View check-in history and balance
 /help - Show this help`,
 
 	'/help': `<b>Available Commands</b>
 
-/status - View current account balance (real-time)
 /checkin - Manually trigger check-in
-/history - View recent check-in history
+/history - View recent check-in history and balance
 /help - Show this help message
 
 <i>Bot runs automatically every 6 hours</i>`,
@@ -79,10 +76,6 @@ export default {
 					response = COMMANDS[command];
 					break;
 
-				case '/status':
-					response = await getAccountStatus(env);
-					break;
-
 				case '/checkin':
 					response = await triggerCheckin(env);
 					break;
@@ -116,7 +109,6 @@ async function setupBotCommands(env) {
 	}
 
 	const commands = [
-		{ command: 'status', description: 'View real-time balance' },
 		{ command: 'checkin', description: 'Trigger check-in' },
 		{ command: 'history', description: 'View check-in history' },
 		{ command: 'help', description: 'Show help message' },
@@ -149,121 +141,6 @@ async function sendMessage(env, chatId, text) {
 			disable_web_page_preview: true
 		})
 	});
-}
-
-// Get account status with real-time balance query
-async function getAccountStatus(env) {
-	if (!env.ANYROUTER_ACCOUNTS) {
-		return '未配置 ANYROUTER_ACCOUNTS 环境变量';
-	}
-	if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
-		return 'GitHub configuration not set';
-	}
-
-	try {
-		// 1. Read WAF cookies from repo
-		const wafUrl = `https://api.github.com/repos/${env.GITHUB_REPO}/contents/waf_cookies.json`;
-		const wafResp = await fetch(wafUrl, {
-			headers: {
-				'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
-				'User-Agent': 'AnyRouter-Bot',
-				'Accept': 'application/vnd.github.v3+json'
-			}
-		});
-
-		let wafCookies = {};
-		if (wafResp.ok) {
-			const wafData = await wafResp.json();
-			if (wafData.content) {
-				wafCookies = JSON.parse(atob(wafData.content.replace(/\n/g, '')));
-			}
-		}
-
-		// 2. Parse accounts
-		const accounts = JSON.parse(env.ANYROUTER_ACCOUNTS);
-		const results = [];
-
-		for (const account of accounts) {
-			const name = account.name || 'Unknown';
-			const provider = account.provider || 'anyrouter';
-			const domain = 'https://anyrouter.top';
-
-			try {
-				// Build cookie string: WAF cookies + account cookies
-				let cookieParts = [];
-
-				// Add WAF cookies for this provider
-				if (wafCookies[provider]?.cookies) {
-					for (const [k, v] of Object.entries(wafCookies[provider].cookies)) {
-						cookieParts.push(`${k}=${v}`);
-					}
-				}
-
-				// Add account cookies
-				if (typeof account.cookies === 'object') {
-					for (const [k, v] of Object.entries(account.cookies)) {
-						cookieParts.push(`${k}=${v}`);
-					}
-				} else if (account.cookies) {
-					cookieParts.push(account.cookies);
-				}
-
-				const cookieStr = cookieParts.join('; ');
-
-				const resp = await fetch(`${domain}/api/user/self`, {
-					method: 'GET',
-					headers: {
-						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-						'Accept': 'application/json, text/plain, */*',
-						'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-						'Referer': domain,
-						'Origin': domain,
-						'Cookie': cookieStr,
-						'new-api-user': account.api_user || ''
-					}
-				});
-
-				if (resp.ok) {
-					const data = await resp.json();
-					if (data.success && data.data) {
-						const quota = (data.data.quota / 500000).toFixed(2);
-						const used = (data.data.used_quota / 500000).toFixed(2);
-						results.push({ name, success: true, balance: `$${quota}`, used: `$${used}` });
-						continue;
-					}
-				}
-				results.push({ name, success: false, error: `HTTP ${resp.status}` });
-			} catch (e) {
-				results.push({ name, success: false, error: e.message });
-			}
-		}
-
-		// Format response
-		const now = new Date(Date.now() + 8 * 60 * 60 * 1000); // UTC+8
-		const timeStr = `${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')} ${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
-
-		let msg = `<b>💰 实时余额</b>\n\n`;
-		for (const r of results) {
-			const icon = r.success ? '✅' : '❌';
-			msg += `${icon} <b>${r.name}</b>\n`;
-			if (r.success) {
-				msg += `    余额: <code>${r.balance}</code>\n`;
-				msg += `    已用: <code>${r.used}</code>\n`;
-			} else {
-				msg += `    <i>查询失败: ${r.error}</i>\n`;
-			}
-		}
-		msg += `\n<i>🕐 ${timeStr}</i>`;
-
-		// Show WAF cookie age if available
-		if (wafCookies.anyrouter?.updated_at) {
-			msg += `\n<i>🔑 WAF: ${wafCookies.anyrouter.updated_at.slice(5, 16)}</i>`;
-		}
-
-		return msg;
-	} catch (error) {
-		return `查询失败: ${error.message}`;
-	}
 }
 
 // Get check-in history
