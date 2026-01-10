@@ -82,15 +82,16 @@ jobs:
           uv run playwright install chromium --with-deps
         fi
 
-    - name: 恢复余额历史缓存
+    - name: 恢复数据缓存
       uses: actions/cache@v4
       with:
         path: |
           balance_hash.txt
           balance_history.json
-        key: balance-data-${{ github.sha }}
+          waf_cookies.json
+        key: checkin-data-${{ github.sha }}
         restore-keys: |
-          balance-data-
+          checkin-data-
 
     - name: 执行签到
       id: checkin
@@ -115,16 +116,17 @@ jobs:
       run: |
         xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" uv run checkin.py
 
-    - name: 提交余额历史
+    - name: 提交数据文件
       if: always()
       run: |
-        if [ -f balance_history.json ]; then
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add balance_history.json
-          git diff --staged --quiet || git commit -m "chore: update balance history [skip ci]"
-          git push || echo "Push failed, will retry next run"
-        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        # 添加所有数据文件
+        [ -f balance_history.json ] && git add balance_history.json
+        [ -f waf_cookies.json ] && git add waf_cookies.json
+        # 提交并推送
+        git diff --staged --quiet || git commit -m "chore: update data files [skip ci]"
+        git push || echo "Push failed, will retry next run"
 
     - name: 执行结果
       if: always()

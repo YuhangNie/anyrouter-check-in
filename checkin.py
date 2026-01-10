@@ -21,6 +21,7 @@ load_dotenv()
 
 BALANCE_HASH_FILE = 'balance_hash.txt'
 BALANCE_HISTORY_FILE = 'balance_history.json'
+WAF_COOKIES_FILE = 'waf_cookies.json'
 MAX_HISTORY_RECORDS = 20
 
 
@@ -64,6 +65,32 @@ def save_balance_history(history):
 			json.dump(history, f, ensure_ascii=False, indent=2)
 	except Exception as e:
 		print(f'Warning: Failed to save balance history: {e}')
+
+
+def load_waf_cookies():
+	"""加载 WAF cookies"""
+	try:
+		if os.path.exists(WAF_COOKIES_FILE):
+			with open(WAF_COOKIES_FILE, 'r', encoding='utf-8') as f:
+				return json.load(f)
+	except Exception:
+		pass
+	return {}
+
+
+def save_waf_cookies(provider: str, waf_cookies: dict):
+	"""保存 WAF cookies（按 provider 分组）"""
+	try:
+		all_cookies = load_waf_cookies()
+		all_cookies[provider] = {
+			'cookies': waf_cookies,
+			'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		}
+		with open(WAF_COOKIES_FILE, 'w', encoding='utf-8') as f:
+			json.dump(all_cookies, f, ensure_ascii=False, indent=2)
+		print(f'[INFO] WAF cookies saved for provider: {provider}')
+	except Exception as e:
+		print(f'Warning: Failed to save WAF cookies: {e}')
 
 
 def generate_balance_hash(balances):
@@ -185,6 +212,8 @@ async def prepare_cookies(account_name: str, provider_config, user_cookies: dict
 		if not waf_cookies:
 			print(f'[FAILED] {account_name}: Unable to get WAF cookies')
 			return None
+		# 保存 WAF cookies 供 Telegram Bot 使用
+		save_waf_cookies(provider_config.name, waf_cookies)
 	else:
 		print(f'[INFO] {account_name}: Bypass WAF not required, using user cookies directly')
 
