@@ -127,8 +127,15 @@ jobs:
         SERVERPUSHKEY: ${{ secrets.SERVERPUSHKEY }}
         FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
         WEIXIN_WEBHOOK: ${{ secrets.WEIXIN_WEBHOOK }}
+        # Telegram 配置
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+        TELEGRAM_SILENT: ${{ secrets.TELEGRAM_SILENT }}
+        TELEGRAM_NOTIFY_SUCCESS: ${{ secrets.TELEGRAM_NOTIFY_SUCCESS }}
+        TELEGRAM_DISABLE_PREVIEW: ${{ secrets.TELEGRAM_DISABLE_PREVIEW }}
+        TELEGRAM_SCREENSHOT: ${{ secrets.TELEGRAM_SCREENSHOT }}
+        # Gotify 配置
         GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
         GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
         GOTIFY_PRIORITY: ${{ secrets.GOTIFY_PRIORITY }}

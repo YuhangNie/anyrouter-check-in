@@ -8,7 +8,9 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -20,6 +22,7 @@ from utils.notify import notify
 load_dotenv()
 
 BALANCE_HASH_FILE = 'balance_hash.txt'
+SCREENSHOT_DIR = Path(tempfile.gettempdir()) / 'anyrouter_screenshots'
 
 
 def load_balance_hash():
@@ -65,9 +68,10 @@ def parse_cookies(cookies_data):
 	return {}
 
 
-async def get_waf_cookies_with_playwright(account_name: str, login_url: str, required_cookies: list[str]):
-	"""使用 Playwright 获取 WAF cookies（隐私模式）"""
+async def get_waf_cookies_with_playwright(account_name: str, login_url: str, required_cookies: list[str], take_screenshot: bool = False):
+	"""使用 Playwright 获取 WAF cookies（隐私模式），可选截图"""
 	print(f'[PROCESSING] {account_name}: Starting browser to get WAF cookies...')
+	screenshot_path = None
 
 	async with async_playwright() as p:
 		import tempfile
@@ -99,6 +103,19 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 				except Exception:
 					await page.wait_for_timeout(3000)
 
+				# 截图功能
+				if take_screenshot:
+					try:
+						SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+						timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+						safe_name = account_name.replace(' ', '_').replace('/', '_')[:20]
+						screenshot_path = SCREENSHOT_DIR / f'checkin_{safe_name}_{timestamp}.png'
+						await page.screenshot(path=str(screenshot_path), full_page=False)
+						print(f'[INFO] {account_name}: Screenshot saved to {screenshot_path}')
+					except Exception as e:
+						print(f'[WARNING] {account_name}: Failed to take screenshot: {e}')
+						screenshot_path = None
+
 				cookies = await page.context.cookies()
 
 				waf_cookies = {}
@@ -115,18 +132,18 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 				if missing_cookies:
 					print(f'[FAILED] {account_name}: Missing WAF cookies: {missing_cookies}')
 					await context.close()
-					return None
+					return None, screenshot_path
 
 				print(f'[SUCCESS] {account_name}: Successfully got all WAF cookies')
 
 				await context.close()
 
-				return waf_cookies
+				return waf_cookies, screenshot_path
 
 			except Exception as e:
 				print(f'[FAILED] {account_name}: Error occurred while getting WAF cookies: {e}')
 				await context.close()
-				return None
+				return None, screenshot_path
 
 
 def get_user_info(client, headers, user_info_url: str):
@@ -151,20 +168,21 @@ def get_user_info(client, headers, user_info_url: str):
 		return {'success': False, 'error': f'Failed to get user info: {str(e)[:50]}...'}
 
 
-async def prepare_cookies(account_name: str, provider_config, user_cookies: dict) -> dict | None:
-	"""准备请求所需的 cookies（可能包含 WAF cookies）"""
+async def prepare_cookies(account_name: str, provider_config, user_cookies: dict, take_screenshot: bool = False) -> tuple[dict | None, str | None]:
+	"""准备请求所需的 cookies（可能包含 WAF cookies），返回 (cookies, screenshot_path)"""
 	waf_cookies = {}
+	screenshot_path = None
 
 	if provider_config.needs_waf_cookies():
 		login_url = f'{provider_config.domain}{provider_config.login_path}'
-		waf_cookies = await get_waf_cookies_with_playwright(account_name, login_url, provider_config.waf_cookie_names)
+		waf_cookies, screenshot_path = await get_waf_cookies_with_playwright(account_name, login_url, provider_config.waf_cookie_names, take_screenshot)
 		if not waf_cookies:
 			print(f'[FAILED] {account_name}: Unable to get WAF cookies')
-			return None
+			return None, screenshot_path
 	else:
 		print(f'[INFO] {account_name}: Bypass WAF not required, using user cookies directly')
 
-	return {**waf_cookies, **user_cookies}
+	return {**waf_cookies, **user_cookies}, screenshot_path
 
 
 def execute_check_in(client, account_name: str, provider_config, headers: dict):
@@ -202,26 +220,26 @@ def execute_check_in(client, account_name: str, provider_config, headers: dict):
 		return False
 
 
-async def check_in_account(account: AccountConfig, account_index: int, app_config: AppConfig):
-	"""为单个账号执行签到操作"""
+async def check_in_account(account: AccountConfig, account_index: int, app_config: AppConfig, take_screenshot: bool = False):
+	"""为单个账号执行签到操作，返回 (success, user_info, screenshot_path)"""
 	account_name = account.get_display_name(account_index)
 	print(f'\n[PROCESSING] Starting to process {account_name}')
 
 	provider_config = app_config.get_provider(account.provider)
 	if not provider_config:
 		print(f'[FAILED] {account_name}: Provider "{account.provider}" not found in configuration')
-		return False, None
+		return False, None, None
 
 	print(f'[INFO] {account_name}: Using provider "{account.provider}" ({provider_config.domain})')
 
 	user_cookies = parse_cookies(account.cookies)
 	if not user_cookies:
 		print(f'[FAILED] {account_name}: Invalid configuration format')
-		return False, None
+		return False, None, None
 
-	all_cookies = await prepare_cookies(account_name, provider_config, user_cookies)
+	all_cookies, screenshot_path = await prepare_cookies(account_name, provider_config, user_cookies, take_screenshot)
 	if not all_cookies:
-		return False, None
+		return False, None, screenshot_path
 
 	client = httpx.Client(http2=True, timeout=30.0)
 
@@ -251,14 +269,14 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 
 		if provider_config.needs_manual_check_in():
 			success = execute_check_in(client, account_name, provider_config, headers)
-			return success, user_info
+			return success, user_info, screenshot_path
 		else:
 			print(f'[INFO] {account_name}: Check-in completed automatically (triggered by user info request)')
-			return True, user_info
+			return True, user_info, screenshot_path
 
 	except Exception as e:
 		print(f'[FAILED] {account_name}: Error occurred during check-in process - {str(e)[:50]}...')
-		return False, None
+		return False, None, screenshot_path
 	finally:
 		client.close()
 
@@ -266,7 +284,8 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 async def main():
 	"""主函数"""
 	print('[SYSTEM] AnyRouter.top multi-account auto check-in script started (using Playwright)')
-	print(f'[TIME] Execution time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+	execution_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+	print(f'[TIME] Execution time: {execution_time}')
 
 	app_config = AppConfig.load_from_env()
 	print(f'[INFO] Loaded {len(app_config.providers)} provider configuration(s)')
@@ -278,6 +297,11 @@ async def main():
 
 	print(f'[INFO] Found {len(accounts)} account configurations')
 
+	# 是否启用截图功能
+	enable_screenshot = os.getenv('TELEGRAM_SCREENSHOT', 'true').lower() == 'true'
+	if enable_screenshot:
+		print('[INFO] Screenshot feature enabled')
+
 	last_balance_hash = load_balance_hash()
 
 	success_count = 0
@@ -287,28 +311,50 @@ async def main():
 	need_notify = False  # 是否需要发送通知
 	balance_changed = False  # 余额是否有变化
 
+	# 用于Telegram增强通知的结构化数据
+	checkin_results = []
+	screenshot_paths = []
+
 	for i, account in enumerate(accounts):
 		account_key = f'account_{i + 1}'
+		account_name = account.get_display_name(i)
 		try:
-			success, user_info = await check_in_account(account, i, app_config)
+			success, user_info, screenshot_path = await check_in_account(account, i, app_config, take_screenshot=enable_screenshot)
 			if success:
 				success_count += 1
+
+			# 收集截图路径
+			if screenshot_path:
+				screenshot_paths.append(str(screenshot_path))
 
 			should_notify_this_account = False
 
 			if not success:
 				should_notify_this_account = True
 				need_notify = True
-				account_name = account.get_display_name(i)
 				print(f'[NOTIFY] {account_name} failed, will send notification')
+
+			# 构建结构化结果
+			result_data = {
+				'name': account_name,
+				'success': success,
+				'quota': None,
+				'used': None,
+				'error': None,
+			}
 
 			if user_info and user_info.get('success'):
 				current_quota = user_info['quota']
 				current_used = user_info['used_quota']
 				current_balances[account_key] = {'quota': current_quota, 'used': current_used}
+				result_data['quota'] = current_quota
+				result_data['used'] = current_used
+			elif user_info and user_info.get('error'):
+				result_data['error'] = user_info['error']
+
+			checkin_results.append(result_data)
 
 			if should_notify_this_account:
-				account_name = account.get_display_name(i)
 				status = '[SUCCESS]' if success else '[FAIL]'
 				account_result = f'{status} {account_name}'
 				if user_info and user_info.get('success'):
@@ -318,10 +364,16 @@ async def main():
 				notification_content.append(account_result)
 
 		except Exception as e:
-			account_name = account.get_display_name(i)
 			print(f'[FAILED] {account_name} processing exception: {e}')
 			need_notify = True  # 异常也需要通知
 			notification_content.append(f'[FAIL] {account_name} exception: {str(e)[:50]}...')
+			checkin_results.append({
+				'name': account_name,
+				'success': False,
+				'quota': None,
+				'used': None,
+				'error': str(e)[:50],
+			})
 
 	# 检查余额变化
 	current_balance_hash = generate_balance_hash(current_balances) if current_balances else None
@@ -356,30 +408,73 @@ async def main():
 	if current_balance_hash:
 		save_balance_hash(current_balance_hash)
 
-	if need_notify and notification_content:
-		# 构建通知内容
-		summary = [
-			'[STATS] Check-in result statistics:',
-			f'[SUCCESS] Success: {success_count}/{total_count}',
-			f'[FAIL] Failed: {total_count - success_count}/{total_count}',
-		]
+	# 发送通知
+	if need_notify or balance_changed or notify.telegram_notify_success:
+		# 先尝试发送Telegram增强通知
+		try:
+			# 选择第一张截图发送（如果有）
+			screenshot_to_send = screenshot_paths[0] if screenshot_paths else None
+			notify.send_telegram_enhanced(
+				results=checkin_results,
+				success_count=success_count,
+				total_count=total_count,
+				execution_time=execution_time,
+				balance_changed=balance_changed,
+				screenshot_path=screenshot_to_send,
+			)
+			print('[Telegram]: Enhanced notification sent successfully!')
+		except Exception as e:
+			print(f'[Telegram]: Enhanced notification failed: {str(e)}')
 
-		if success_count == total_count:
-			summary.append('[SUCCESS] All accounts check-in successful!')
-		elif success_count > 0:
-			summary.append('[WARN] Some accounts check-in successful')
-		else:
-			summary.append('[ERROR] All accounts check-in failed')
+		# 发送其他通知渠道（使用旧格式）
+		if need_notify and notification_content:
+			summary = [
+				'[STATS] Check-in result statistics:',
+				f'[SUCCESS] Success: {success_count}/{total_count}',
+				f'[FAIL] Failed: {total_count - success_count}/{total_count}',
+			]
 
-		time_info = f'[TIME] Execution time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+			if success_count == total_count:
+				summary.append('[SUCCESS] All accounts check-in successful!')
+			elif success_count > 0:
+				summary.append('[WARN] Some accounts check-in successful')
+			else:
+				summary.append('[ERROR] All accounts check-in failed')
 
-		notify_content = '\n\n'.join([time_info, '\n'.join(notification_content), '\n'.join(summary)])
+			time_info = f'[TIME] Execution time: {execution_time}'
+			notify_content = '\n\n'.join([time_info, '\n'.join(notification_content), '\n'.join(summary)])
 
-		print(notify_content)
-		notify.push_message('AnyRouter Check-in Alert', notify_content, msg_type='text')
+			print(notify_content)
+
+			# 发送其他通知方式（排除Telegram，因为已经发送过了）
+			other_notifications = [
+				('Email', lambda: notify.send_email('AnyRouter Check-in Alert', notify_content, 'text')),
+				('PushPlus', lambda: notify.send_pushplus('AnyRouter Check-in Alert', notify_content)),
+				('Server Push', lambda: notify.send_serverPush('AnyRouter Check-in Alert', notify_content)),
+				('DingTalk', lambda: notify.send_dingtalk('AnyRouter Check-in Alert', notify_content)),
+				('Feishu', lambda: notify.send_feishu('AnyRouter Check-in Alert', notify_content)),
+				('WeChat Work', lambda: notify.send_wecom('AnyRouter Check-in Alert', notify_content)),
+				('Gotify', lambda: notify.send_gotify('AnyRouter Check-in Alert', notify_content)),
+			]
+
+			for name, func in other_notifications:
+				try:
+					func()
+					print(f'[{name}]: Message push successful!')
+				except Exception as e:
+					print(f'[{name}]: Message push failed! Reason: {str(e)}')
+
 		print('[NOTIFY] Notification sent due to failures or balance changes')
 	else:
 		print('[INFO] All accounts successful and no balance changes detected, notification skipped')
+
+	# 清理截图文件
+	for screenshot_path in screenshot_paths:
+		try:
+			if os.path.exists(screenshot_path):
+				os.remove(screenshot_path)
+		except Exception:
+			pass
 
 	# 设置退出码
 	sys.exit(0 if success_count > 0 else 1)

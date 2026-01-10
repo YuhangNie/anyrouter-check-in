@@ -1,9 +1,87 @@
 import os
 import smtplib
+import time
 from email.mime.text import MIMEText
 from typing import Literal
 
 import httpx
+
+
+class TelegramFormatter:
+	"""Telegram消息格式化工具"""
+
+	EMOJI = {
+		'robot': '🤖',
+		'clock': '⏰',
+		'chart': '📊',
+		'success': '✅',
+		'fail': '❌',
+		'warning': '⚠️',
+		'money': '💰',
+		'stats': '📈',
+		'photo': '📷',
+		'line': '━' * 16,
+	}
+
+	@classmethod
+	def format_checkin_message(
+		cls,
+		results: list[dict],
+		success_count: int,
+		total_count: int,
+		execution_time: str,
+		balance_changed: bool = False,
+	) -> str:
+		"""格式化签到结果消息"""
+		lines = [
+			f"{cls.EMOJI['robot']} <b>AnyRouter 签到通知</b>",
+			'',
+			f"{cls.EMOJI['clock']} 执行时间：{execution_time}",
+			'',
+			f"{cls.EMOJI['chart']} <b>签到结果</b>",
+			cls.EMOJI['line'],
+		]
+
+		for result in results:
+			status_emoji = cls.EMOJI['success'] if result.get('success') else cls.EMOJI['fail']
+			account_name = result.get('name', 'Unknown')
+			lines.append(f"{status_emoji} <b>{account_name}</b>")
+
+			if result.get('quota') is not None:
+				quota = result.get('quota', 0)
+				used = result.get('used', 0)
+				lines.append(f"   {cls.EMOJI['money']} 余额: ${quota} | 已用: ${used}")
+
+			if result.get('error'):
+				lines.append(f"   {cls.EMOJI['warning']} {result['error']}")
+
+			lines.append('')
+
+		lines.append(f"{cls.EMOJI['stats']} <b>统计汇总</b>")
+		lines.append(cls.EMOJI['line'])
+		lines.append(f"{cls.EMOJI['success']} 成功: {success_count}/{total_count}")
+
+		if total_count - success_count > 0:
+			lines.append(f"{cls.EMOJI['fail']} 失败: {total_count - success_count}/{total_count}")
+
+		if balance_changed:
+			lines.append(f"\n{cls.EMOJI['warning']} 检测到余额变化")
+
+		return '\n'.join(lines)
+
+	@classmethod
+	def format_error_message(cls, error: str, context: str = '') -> str:
+		"""格式化错误消息"""
+		lines = [
+			f"{cls.EMOJI['robot']} <b>AnyRouter 错误通知</b>",
+			'',
+			f"{cls.EMOJI['fail']} <b>发生错误</b>",
+			cls.EMOJI['line'],
+		]
+		if context:
+			lines.append(f"位置：{context}")
+		lines.append(f"错误：{error}")
+		return '\n'.join(lines)
 
 
 class NotificationKit:
@@ -22,8 +100,22 @@ class NotificationKit:
 		self.gotify_token = os.getenv('GOTIFY_TOKEN')
 		gotify_priority_env = os.getenv('GOTIFY_PRIORITY', '9')
 		self.gotify_priority = int(gotify_priority_env) if gotify_priority_env.strip() else 9
+
+		# Telegram配置
 		self.telegram_bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-		self.telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID')
+		self.telegram_chat_ids = self._parse_chat_ids(os.getenv('TELEGRAM_CHAT_ID', ''))
+		self.telegram_thread_id = os.getenv('TELEGRAM_THREAD_ID')
+		self.telegram_silent = os.getenv('TELEGRAM_SILENT', 'false').lower() == 'true'
+		self.telegram_notify_success = os.getenv('TELEGRAM_NOTIFY_SUCCESS', 'true').lower() == 'true'
+		self.telegram_disable_preview = os.getenv('TELEGRAM_DISABLE_PREVIEW', 'true').lower() == 'true'
+		self.telegram_retry_times = 3
+		self.telegram_retry_delay = 2
+
+	def _parse_chat_ids(self, chat_id_str: str) -> list[str]:
+		"""解析Chat ID，支持逗号分隔多个"""
+		if not chat_id_str:
+			return []
+		return [cid.strip() for cid in chat_id_str.split(',') if cid.strip()]
 
 	def send_email(self, title: str, content: str, msg_type: Literal['text', 'html'] = 'text'):
 		if not self.email_user or not self.email_pass or not self.email_to:
@@ -110,15 +202,129 @@ class NotificationKit:
 		with httpx.Client(timeout=30.0) as client:
 			client.post(url, json=data)
 
+	def _telegram_request(self, method: str, data: dict = None, files: dict = None) -> dict:
+		"""发送Telegram API请求，带重试机制"""
+		if not self.telegram_bot_token:
+			raise ValueError('Telegram Bot Token not configured')
+
+		url = f'https://api.telegram.org/bot{self.telegram_bot_token}/{method}'
+		last_error = None
+
+		for attempt in range(self.telegram_retry_times):
+			try:
+				with httpx.Client(timeout=30.0) as client:
+					if files:
+						response = client.post(url, data=data, files=files)
+					else:
+						response = client.post(url, json=data)
+
+					result = response.json()
+					if result.get('ok'):
+						return result
+					else:
+						error_desc = result.get('description', 'Unknown error')
+						last_error = f"Telegram API error: {error_desc}"
+						# 如果是权限或参数错误，不重试
+						if response.status_code in [400, 401, 403]:
+							raise ValueError(last_error)
+			except httpx.TimeoutException:
+				last_error = f"Request timeout (attempt {attempt + 1}/{self.telegram_retry_times})"
+			except httpx.RequestError as e:
+				last_error = f"Network error: {str(e)}"
+
+			if attempt < self.telegram_retry_times - 1:
+				time.sleep(self.telegram_retry_delay * (attempt + 1))  # 指数退避
+
+		raise ValueError(last_error or 'Failed to send Telegram message')
+
 	def send_telegram(self, title: str, content: str):
-		if not self.telegram_bot_token or not self.telegram_chat_id:
-			raise ValueError('Telegram Bot Token or Chat ID not configured')
+		"""发送Telegram文本消息"""
+		if not self.telegram_chat_ids:
+			raise ValueError('Telegram Chat ID not configured')
 
 		message = f'<b>{title}</b>\n\n{content}'
-		data = {'chat_id': self.telegram_chat_id, 'text': message, 'parse_mode': 'HTML'}
-		url = f'https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage'
-		with httpx.Client(timeout=30.0) as client:
-			client.post(url, json=data)
+
+		for chat_id in self.telegram_chat_ids:
+			data = {
+				'chat_id': chat_id,
+				'text': message,
+				'parse_mode': 'HTML',
+				'disable_web_page_preview': self.telegram_disable_preview,
+				'disable_notification': self.telegram_silent,
+			}
+			if self.telegram_thread_id:
+				data['message_thread_id'] = int(self.telegram_thread_id)
+
+			self._telegram_request('sendMessage', data)
+
+	def send_telegram_photo(self, photo_path: str, caption: str = ''):
+		"""发送Telegram图片消息（用于发送截图）"""
+		if not self.telegram_chat_ids:
+			raise ValueError('Telegram Chat ID not configured')
+
+		for chat_id in self.telegram_chat_ids:
+			data = {
+				'chat_id': chat_id,
+				'caption': caption,
+				'parse_mode': 'HTML',
+				'disable_notification': self.telegram_silent,
+			}
+			if self.telegram_thread_id:
+				data['message_thread_id'] = int(self.telegram_thread_id)
+
+			with open(photo_path, 'rb') as photo_file:
+				files = {'photo': ('screenshot.png', photo_file, 'image/png')}
+				self._telegram_request('sendPhoto', data=data, files=files)
+
+	def send_telegram_enhanced(
+		self,
+		results: list[dict],
+		success_count: int,
+		total_count: int,
+		execution_time: str,
+		balance_changed: bool = False,
+		screenshot_path: str = None,
+	):
+		"""发送增强版Telegram通知（带格式化和可选截图）"""
+		if not self.telegram_chat_ids:
+			raise ValueError('Telegram Chat ID not configured')
+
+		# 检查是否需要发送通知
+		all_success = success_count == total_count
+		if all_success and not self.telegram_notify_success and not balance_changed:
+			print('[Telegram]: All accounts successful, notification skipped (TELEGRAM_NOTIFY_SUCCESS=false)')
+			return
+
+		# 格式化消息
+		message = TelegramFormatter.format_checkin_message(
+			results=results,
+			success_count=success_count,
+			total_count=total_count,
+			execution_time=execution_time,
+			balance_changed=balance_changed,
+		)
+
+		# 发送消息到所有Chat ID
+		for chat_id in self.telegram_chat_ids:
+			data = {
+				'chat_id': chat_id,
+				'text': message,
+				'parse_mode': 'HTML',
+				'disable_web_page_preview': self.telegram_disable_preview,
+				'disable_notification': self.telegram_silent,
+			}
+			if self.telegram_thread_id:
+				data['message_thread_id'] = int(self.telegram_thread_id)
+
+			self._telegram_request('sendMessage', data)
+
+		# 如果有截图，发送截图
+		if screenshot_path:
+			try:
+				caption = f"📷 签到页面截图\n⏰ {execution_time}"
+				self.send_telegram_photo(screenshot_path, caption)
+			except Exception as e:
+				print(f'[Telegram]: Failed to send screenshot: {str(e)}')
 
 	def push_message(self, title: str, content: str, msg_type: Literal['text', 'html'] = 'text'):
 		notifications = [
