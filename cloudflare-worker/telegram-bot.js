@@ -225,27 +225,28 @@ async function getHistory(env) {
 				const history = JSON.parse(content);
 
 				if (history.length > 0) {
-					let msg = `<b>📊 Check-in History</b>\n`;
-					msg += `<code>─────────────────────</code>\n\n`;
+					let msg = `<b>📊 签到历史</b>\n\n`;
 
 					// Show last 5 records
 					const records = history.slice(-5).reverse();
 					for (const record of records) {
 						const icon = record.success ? '✅' : '❌';
-						msg += `${icon} <code>${record.time}</code>\n`;
+						// Format time shorter: MM-DD HH:MM
+						const shortTime = record.time.slice(5, 16);
+						msg += `${icon} <b>${shortTime}</b>\n`;
 
 						for (const acc of record.accounts || []) {
-							const accIcon = acc.success ? '  ✓' : '  ✗';
-							msg += `${accIcon} ${acc.name}`;
+							const accIcon = acc.success ? '✓' : '✗';
+							msg += `    ${accIcon} ${acc.name}`;
 							if (acc.balance) {
-								msg += ` | ${acc.balance}`;
+								msg += `  <code>${acc.balance}</code>`;
 							}
 							msg += '\n';
 						}
 						msg += '\n';
 					}
 
-					msg += `<i>Showing last ${records.length} records</i>`;
+					msg += `<i>共 ${records.length} 条记录</i>`;
 					return msg;
 				}
 			}
