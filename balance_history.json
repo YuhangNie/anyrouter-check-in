@@ -144,20 +144,20 @@
     ]
   },
   {
-    "time": "2026-01-11 11:28:43",
-    "success": false,
+    "time": "2026-01-11 13:11:49",
+    "success": true,
     "accounts": [
       {
-        "name": "linuxdo",
-        "success": false,
-        "balance": "",
-        "used": ""
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$2925.29",
+        "used": "$1099.71"
       },
       {
-        "name": "edu",
-        "success": false,
-        "balance": "",
-        "used": ""
+        "name": "EDU",
+        "success": true,
+        "balance": "$750.0",
+        "used": "$0.0"
       }
     ]
   }
