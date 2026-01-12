@@ -286,5 +286,23 @@
         "used": "$0.0"
       }
     ]
+  },
+  {
+    "time": "2026-01-13 02:53:44",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$2948.5",
+        "used": "$1101.5"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$775.0",
+        "used": "$0.0"
+      }
+    ]
   }
 ]
