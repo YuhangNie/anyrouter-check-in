@@ -1,23 +1,5 @@
 [
   {
-    "time": "2026-02-02 21:41:11",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3419.0",
-        "used": "$1156.0"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1174.86",
-        "used": "$125.14"
-      }
-    ]
-  },
-  {
     "time": "2026-02-03 11:16:12",
     "success": true,
     "accounts": [
@@ -356,6 +338,24 @@
         "success": true,
         "balance": "$870.03",
         "used": "$504.97"
+      }
+    ]
+  },
+  {
+    "time": "2026-02-05 21:45:35",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3494.0",
+        "used": "$1156.0"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$828.45",
+        "used": "$546.55"
       }
     ]
   }
