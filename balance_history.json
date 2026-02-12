@@ -1,35 +1,5 @@
 [
   {
-    "time": "2026-02-09 10:16:21",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3594.0",
-        "used": "$1156.0"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$914.19",
-        "used": "$560.81"
-      },
-      {
-        "name": "CJJ_ACCOUNT1(EDU)",
-        "success": true,
-        "balance": "$187.37",
-        "used": "$1662.26"
-      },
-      {
-        "name": "CJJ_ACCOUNT2",
-        "success": true,
-        "balance": "$196.58",
-        "used": "$103.36"
-      }
-    ]
-  },
-  {
     "time": "2026-02-09 11:27:52",
     "success": true,
     "accounts": [
@@ -590,6 +560,36 @@
         "success": true,
         "balance": "$206.47",
         "used": "$1718.53"
+      },
+      {
+        "name": "CJJ_ACCOUNT2",
+        "success": true,
+        "balance": "$262.32",
+        "used": "$112.68"
+      }
+    ]
+  },
+  {
+    "time": "2026-02-13 03:35:14",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3628.98",
+        "used": "$1196.02"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$961.94",
+        "used": "$588.06"
+      },
+      {
+        "name": "CJJ_ACCOUNT1(EDU)",
+        "success": true,
+        "balance": "$181.61",
+        "used": "$1743.39"
       },
       {
         "name": "CJJ_ACCOUNT2",
