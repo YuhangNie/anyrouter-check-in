@@ -1,35 +1,5 @@
 [
   {
-    "time": "2026-02-17 15:18:17",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3731.21",
-        "used": "$1218.79"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1063.41",
-        "used": "$611.59"
-      },
-      {
-        "name": "CJJ_ACCOUNT1(EDU)",
-        "success": true,
-        "balance": "$95.47",
-        "used": "$1954.53"
-      },
-      {
-        "name": "CJJ_ACCOUNT2",
-        "success": true,
-        "balance": "$113.09",
-        "used": "$386.91"
-      }
-    ]
-  },
-  {
     "time": "2026-02-17 21:41:33",
     "success": true,
     "accounts": [
@@ -620,6 +590,48 @@
         "success": true,
         "balance": "$17.95",
         "used": "$106.78"
+      }
+    ]
+  },
+  {
+    "time": "2026-02-22 11:20:50",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3674.88",
+        "used": "$1375.12"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1011.97",
+        "used": "$763.03"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$0.6",
+        "used": "$2149.4"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$0.2",
+        "used": "$599.8"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$24.99",
+        "used": "$125.01"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$10.97",
+        "used": "$114.03"
       }
     ]
   }
