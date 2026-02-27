@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-02-23 02:57:38",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3645.18",
-        "used": "$1429.82"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1023.58",
-        "used": "$776.42"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$0.16",
-        "used": "$2174.84"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$0.05",
-        "used": "$624.95"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$0.17",
-        "used": "$174.83"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$0.09",
-        "used": "$149.91"
-      }
-    ]
-  },
-  {
     "time": "2026-02-23 11:24:19",
     "success": true,
     "accounts": [
@@ -836,6 +794,48 @@
         "success": true,
         "balance": "$59.64",
         "used": "$214.56"
+      }
+    ]
+  },
+  {
+    "time": "2026-02-28 03:07:59",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3582.6",
+        "used": "$1617.4"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$961.97",
+        "used": "$963.03"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$40.47",
+        "used": "$2259.53"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$14.74",
+        "used": "$735.26"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$93.33",
+        "used": "$205.82"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$57.8",
+        "used": "$216.4"
       }
     ]
   }
