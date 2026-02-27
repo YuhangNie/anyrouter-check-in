@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-02-22 11:20:50",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3674.88",
-        "used": "$1375.12"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1011.97",
-        "used": "$763.03"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$0.6",
-        "used": "$2149.4"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$0.2",
-        "used": "$599.8"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$24.99",
-        "used": "$125.01"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$10.97",
-        "used": "$114.03"
-      }
-    ]
-  },
-  {
     "time": "2026-02-22 15:09:09",
     "success": true,
     "accounts": [
@@ -818,6 +776,48 @@
         "success": true,
         "balance": "$30.59",
         "used": "$2244.41"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$0.37",
+        "used": "$724.63"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$70.32",
+        "used": "$203.83"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$41.72",
+        "used": "$207.47"
+      }
+    ]
+  },
+  {
+    "time": "2026-02-27 11:15:06",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3576.67",
+        "used": "$1598.33"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$947.36",
+        "used": "$952.64"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$29.93",
+        "used": "$2245.07"
       },
       {
         "name": "219040012312",
