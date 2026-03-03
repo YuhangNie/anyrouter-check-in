@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-02-26 15:20:49",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3618.17",
-        "used": "$1556.83"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$947.99",
-        "used": "$952.01"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$41.48",
-        "used": "$2233.52"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$21.76",
-        "used": "$703.24"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$70.32",
-        "used": "$203.83"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$54.54",
-        "used": "$194.66"
-      }
-    ]
-  },
-  {
     "time": "2026-02-26 21:45:57",
     "success": true,
     "accounts": [
@@ -835,6 +793,48 @@
         "name": "lishijun@mail.ecust.edu.cn",
         "success": true,
         "balance": "$31.81",
+        "used": "$317.38"
+      }
+    ]
+  },
+  {
+    "time": "2026-03-03 15:16:14",
+    "success": false,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": false,
+        "balance": "",
+        "used": ""
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1042.79",
+        "used": "$982.21"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$24.36",
+        "used": "$2374.99"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$114.74",
+        "used": "$735.26"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$105.68",
+        "used": "$293.47"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$56.81",
         "used": "$317.38"
       }
     ]
