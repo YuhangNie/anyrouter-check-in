@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-02-27 03:15:50",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3576.67",
-        "used": "$1598.33"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$947.36",
-        "used": "$952.64"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$30.59",
-        "used": "$2244.41"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$0.37",
-        "used": "$724.63"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$70.32",
-        "used": "$203.83"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$41.72",
-        "used": "$207.47"
-      }
-    ]
-  },
-  {
     "time": "2026-02-27 11:15:06",
     "success": true,
     "accounts": [
@@ -806,6 +764,48 @@
         "success": false,
         "balance": "",
         "used": ""
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1042.38",
+        "used": "$982.62"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$0.55",
+        "used": "$2399.45"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$114.74",
+        "used": "$735.26"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$105.68",
+        "used": "$293.47"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$55.96",
+        "used": "$318.23"
+      }
+    ]
+  },
+  {
+    "time": "2026-03-03 21:39:45",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3435.41",
+        "used": "$1864.59"
       },
       {
         "name": "EDU",
