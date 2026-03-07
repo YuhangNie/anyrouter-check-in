@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-03-02 21:39:14",
-    "success": false,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": false,
-        "balance": "",
-        "used": ""
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1019.09",
-        "used": "$980.91"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$52.98",
-        "used": "$2322.02"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$89.74",
-        "used": "$735.26"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$80.68",
-        "used": "$293.47"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$107.42",
-        "used": "$241.77"
-      }
-    ]
-  },
-  {
     "time": "2026-03-03 03:10:47",
     "success": false,
     "accounts": [
@@ -824,6 +782,48 @@
         "success": true,
         "balance": "$214.74",
         "used": "$735.26"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$205.68",
+        "used": "$293.47"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$83.63",
+        "used": "$390.56"
+      }
+    ]
+  },
+  {
+    "time": "2026-03-07 21:10:26",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3534.75",
+        "used": "$1865.25"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1133.72",
+        "used": "$991.28"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$57.05",
+        "used": "$2442.95"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$182.66",
+        "used": "$767.34"
       },
       {
         "name": "10080666@mail.ecust.edu.cn",
