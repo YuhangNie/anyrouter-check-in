@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-03-02 11:17:08",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3385.41",
-        "used": "$1864.59"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1001.99",
-        "used": "$973.01"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$59.58",
-        "used": "$2290.42"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$64.74",
-        "used": "$735.26"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$56.87",
-        "used": "$292.28"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$88.54",
-        "used": "$235.65"
-      }
-    ]
-  },
-  {
     "time": "2026-03-02 15:19:14",
     "success": true,
     "accounts": [
@@ -805,6 +763,48 @@
         "name": "LINUXDO",
         "success": true,
         "balance": "$3509.75",
+        "used": "$1865.25"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1108.74",
+        "used": "$991.26"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": true,
+        "balance": "$40.96",
+        "used": "$2434.04"
+      },
+      {
+        "name": "219040012312",
+        "success": true,
+        "balance": "$189.74",
+        "used": "$735.26"
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$180.68",
+        "used": "$293.47"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$58.63",
+        "used": "$390.56"
+      }
+    ]
+  },
+  {
+    "time": "2026-03-07 10:46:32",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3534.75",
         "used": "$1865.25"
       },
       {
