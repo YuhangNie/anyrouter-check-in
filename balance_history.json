@@ -1,47 +1,5 @@
 [
   {
-    "time": "2026-03-04 21:33:21",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$3459.75",
-        "used": "$1865.25"
-      },
-      {
-        "name": "EDU",
-        "success": true,
-        "balance": "$1062.84",
-        "used": "$987.16"
-      },
-      {
-        "name": "2024090053@mails.szu.edu.cn",
-        "success": true,
-        "balance": "$17.81",
-        "used": "$2407.19"
-      },
-      {
-        "name": "219040012312",
-        "success": true,
-        "balance": "$139.74",
-        "used": "$735.26"
-      },
-      {
-        "name": "10080666@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$130.68",
-        "used": "$293.47"
-      },
-      {
-        "name": "lishijun@mail.ecust.edu.cn",
-        "success": true,
-        "balance": "$49.82",
-        "used": "$349.37"
-      }
-    ]
-  },
-  {
     "time": "2026-03-05 03:11:25",
     "success": true,
     "accounts": [
@@ -836,6 +794,48 @@
         "success": true,
         "balance": "$64.33",
         "used": "$459.86"
+      }
+    ]
+  },
+  {
+    "time": "2026-03-09 21:41:41",
+    "success": false,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$3584.75",
+        "used": "$1865.25"
+      },
+      {
+        "name": "EDU",
+        "success": true,
+        "balance": "$1183.61",
+        "used": "$991.39"
+      },
+      {
+        "name": "2024090053@mails.szu.edu.cn",
+        "success": false,
+        "balance": "",
+        "used": ""
+      },
+      {
+        "name": "219040012312",
+        "success": false,
+        "balance": "",
+        "used": ""
+      },
+      {
+        "name": "10080666@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$69.51",
+        "used": "$479.64"
+      },
+      {
+        "name": "lishijun@mail.ecust.edu.cn",
+        "success": true,
+        "balance": "$30.6",
+        "used": "$493.59"
       }
     ]
   }
