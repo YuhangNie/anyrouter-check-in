@@ -1,17 +1,5 @@
 [
   {
-    "time": "2026-05-31 16:50:50",
-    "success": true,
-    "accounts": [
-      {
-        "name": "LINUXDO",
-        "success": true,
-        "balance": "$5449.4",
-        "used": "$2050.6"
-      }
-    ]
-  },
-  {
     "time": "2026-05-31 16:52:50",
     "success": true,
     "accounts": [
@@ -236,6 +224,18 @@
         "success": true,
         "balance": "$5292.71",
         "used": "$2282.29"
+      }
+    ]
+  },
+  {
+    "time": "2026-06-04 18:13:12",
+    "success": true,
+    "accounts": [
+      {
+        "name": "LINUXDO",
+        "success": true,
+        "balance": "$5282.92",
+        "used": "$2317.08"
       }
     ]
   }
