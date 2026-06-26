@@ -228,14 +228,14 @@
     ]
   },
   {
-    "time": "2026-06-26 12:44:58",
-    "success": false,
+    "time": "2026-06-26 17:54:29",
+    "success": true,
     "accounts": [
       {
         "name": "LINUXDO",
-        "success": false,
-        "balance": "",
-        "used": ""
+        "success": true,
+        "balance": "$5390.29",
+        "used": "$2759.71"
       }
     ]
   }
